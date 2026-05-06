@@ -23,6 +23,9 @@ int barBass = 0;
 int barMid = 0;
 int barTreble = 0;
 
+unsigned long lastBarUpdate = 0;
+const unsigned long BAR_UPDATE_INTERVAL = 20; // ms between bar steps
+
 // TODO: need to add voltage divider on SDA/SCL because OLED is 3.3V logic
 // and Arduino outputs 5V. Also need to disable internal pullups maybe?
 // Wire.begin() might enable pullups by default... need to check datasheet
@@ -115,14 +118,18 @@ void loop() {
   
   // "smooth" transition - lerp by 1 pixel per loop
   // TODO: this is too slow / too fast depending on loop time, need millis() based
-  if(barBass < targetBass) barBass++;
-  else if(barBass > targetBass) barBass--;
+   unsigned long now = millis();
+  if(now - lastBarUpdate >= BAR_UPDATE_INTERVAL) {
+    lastBarUpdate = now;
+    if(barBass < targetBass) barBass++;
+    else if(barBass > targetBass) barBass--;
   
-  if(barMid < targetMid) barMid++;
-  else if(barMid > targetMid) barMid--;
+    if(barMid < targetMid) barMid++;
+    else if(barMid > targetMid) barMid--;
   
-  if(barTreble < targetTreble) barTreble++;
-  else if(barTreble > targetTreble) barTreble--;
+    if(barTreble < targetTreble) barTreble++;
+    else if(barTreble > targetTreble) barTreble--;
+}
   
   // --- UPDATE OLED ---
   drawSpectrogram();
@@ -145,7 +152,6 @@ void loop() {
   // FIXME: analogRead is too slow (100us) to do proper audio sampling in loop
   // need to use timer interrupt or free-running ADC mode
   
-  delay(30); // temporary so display doesn't flicker too much
 }
 
 void drawSpectrogram() {
