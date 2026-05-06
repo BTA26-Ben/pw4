@@ -76,11 +76,10 @@ void setup() {
   // Prescaler = 1 (no prescale)
   // f_pwm = 16MHz / (ICR1 + 1)
   // ICR1 = 199 -> 80kHz exactly? 16MHz/200 = 80kHz
-  // Using ICR1 = 100 for 160kHz to be safe, need to check if this is too fast for comparator
-  ICR1 = 100;
+  // f_pwm = 16MHz / (ICR1 + 1) = 16000000 / 200 = 80000 Hz (80kHz)
+  ICR1 = 199;
   
-  // 50% duty cycle to start
-  OCR1A = ICR1 / 2;
+  OCR1A = ICR1 / 2; // 50% duty cycle start, range is 0 to ICR1
   
   // start timer, prescaler 1
   TCCR1B |= (1 << CS10);
