@@ -117,18 +117,19 @@ void loop() {
   int targetTreble = map(rawTreble, 0, 1023, 0, 50);
   
   // "smooth" transition - lerp by 1 pixel per loop
-  // TODO: this is too slow / too fast depending on loop time, need millis() based
-   unsigned long now = millis();
+  // Proportional smoothing - closes 30% of gap per tick for smooth OLED animation
+  unsigned long now = millis();
   if(now - lastBarUpdate >= BAR_UPDATE_INTERVAL) {
     lastBarUpdate = now;
-    if(barBass < targetBass) barBass++;
-    else if(barBass > targetBass) barBass--;
-  
-    if(barMid < targetMid) barMid++;
-    else if(barMid > targetMid) barMid--;
-  
-    if(barTreble < targetTreble) barTreble++;
-    else if(barTreble > targetTreble) barTreble--;
+    barBass = barBass + (targetBass - barBass) * 0.3;
+    barMid = barMid + (targetMid - barMid) * 0.3;
+    barTreble = barTreble + (targetTreble - barTreble) * 0.3;
+
+    // Snap to target when within 1 pixel to avoid stuck bars
+    if(abs(targetBass - barBass) <= 1) barBass = targetBass;
+    if(abs(targetMid - barMid) <= 1) barMid = targetMid;
+    if(abs(targetTreble - barTreble) <= 1) barTreble = targetTreble;
+  }
 }
   
   // --- UPDATE OLED ---
