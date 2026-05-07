@@ -26,9 +26,8 @@ int barTreble = 0;
 unsigned long lastBarUpdate = 0;
 const unsigned long BAR_UPDATE_INTERVAL = 20; // ms between bar steps
 
-// TODO: need to add voltage divider on SDA/SCL because OLED is 3.3V logic
-// and Arduino outputs 5V. Also need to disable internal pullups maybe?
-// Wire.begin() might enable pullups by default... need to check datasheet
+// SSD1306 breakout board includes onboard level shifting — no external
+// voltage divider required between Arduino 5V I2C and OLED 3.3V logic.
 
 void setup() {
   Serial.begin(9600);
