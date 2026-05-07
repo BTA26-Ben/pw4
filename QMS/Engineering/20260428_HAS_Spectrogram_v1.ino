@@ -29,6 +29,15 @@ const unsigned long BAR_UPDATE_INTERVAL = 20; // ms between bar steps
 // SSD1306 breakout board includes onboard level shifting — no external
 // voltage divider required between Arduino 5V I2C and OLED 3.3V logic.
 
+// Peak hold tracking
+int peakBass = 0;
+int peakMid = 0;
+int peakTreble = 0;
+unsigned long peakHoldTimer = 0;
+const unsigned long PEAK_HOLD_TIME = 1000;  // hold at peak for 1 second
+const unsigned long PEAK_DECAY_INTERVAL = 50; // decay speed in ms
+unsigned long lastPeakDecay = 0;
+bool peakHeld = false;
 void setup() {
   Serial.begin(9600);
   while(!Serial); // remove this later, just for debugging
@@ -129,7 +138,20 @@ void loop() {
     if(abs(targetMid - barMid) <= 1) barMid = targetMid;
     if(abs(targetTreble - barTreble) <= 1) barTreble = targetTreble;
   }
-}
+ // --- PEAK HOLD TRACKING ---
+  if(barBass > peakBass) { peakBass = barBass; peakHoldTimer = millis(); peakHeld = true; }
+  if(barMid > peakMid) { peakMid = barMid; peakHoldTimer = millis(); peakHeld = true; }
+  if(barTreble > peakTreble) { peakTreble = barTreble; peakHoldTimer = millis(); peakHeld = true; }
+
+  if(peakHeld && (millis() - peakHoldTimer >= PEAK_HOLD_TIME)) {
+    if(millis() - lastPeakDecay >= PEAK_DECAY_INTERVAL) {
+      lastPeakDecay = millis();
+      if(peakBass > barBass) peakBass--;
+      if(peakMid > barMid) peakMid--;
+      if(peakTreble > barTreble) peakTreble--;
+      if(peakBass <= barBass && peakMid <= barMid && peakTreble <= barTreble) peakHeld = false;
+    }
+  }
   
   // --- UPDATE OLED ---
   drawSpectrogram();
@@ -145,27 +167,29 @@ void loop() {
 
 void drawSpectrogram() {
   display.clearDisplay();
-  
-  // draw 3 bars
+
   int barWidth = 20;
   int spacing = 24;
   int baseLine = 60;
-  
-  // Bass
+
+  // Bass bar + peak
   display.fillRect(10, baseLine - barBass, barWidth, barBass, SSD1306_WHITE);
+  if(peakBass > 0) display.drawFastHLine(10, baseLine - peakBass, barWidth, SSD1306_WHITE);
   display.setCursor(14, baseLine + 4);
   display.print(F("B"));
-  
-  // Mid
+
+  // Mid bar + peak
   display.fillRect(10 + spacing, baseLine - barMid, barWidth, barMid, SSD1306_WHITE);
+  if(peakMid > 0) display.drawFastHLine(10 + spacing, baseLine - peakMid, barWidth, SSD1306_WHITE);
   display.setCursor(14 + spacing, baseLine + 4);
   display.print(F("M"));
-  
-  // Treble
+
+  // Treble bar + peak
   display.fillRect(10 + 2*spacing, baseLine - barTreble, barWidth, barTreble, SSD1306_WHITE);
+  if(peakTreble > 0) display.drawFastHLine(10 + 2*spacing, baseLine - peakTreble, barWidth, SSD1306_WHITE);
   display.setCursor(14 + 2*spacing, baseLine + 4);
   display.print(F("T"));
-  
+
   display.display();
 }
 
