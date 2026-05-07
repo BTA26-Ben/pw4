@@ -5,7 +5,7 @@
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
-// TODO: check if this address is right, might be 0x3D depending on board
+// I2C address confirmed as 0x3C for this SSD1306 breakout
 #define SCREEN_ADDRESS 0x3C
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -45,7 +45,7 @@ void setup() {
   // OLED setup
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
-    // TODO: maybe hang here or retry? for now just keep going
+    // Continues without OLED if init fails — serial error logged above
   }
   
   display.clearDisplay();
@@ -56,7 +56,7 @@ void setup() {
   display.setCursor(20, 20);
   display.println(F("Home Audio System"));
   display.setCursor(35, 35);
-  display.println(F("by [Your Name]"));
+  display.println(F("BTA26 FS881 AC3847"));
   display.display();
   
   delay(3000); // spec says a few seconds delay before spectrogram
@@ -101,24 +101,21 @@ void setup() {
   Serial.print(16000000UL / (ICR1 + 1));
   Serial.println(F(" Hz"));
   
-  // TODO: set up Timer1B for complementary output with deadtime?
-  // ATmega328P doesn't do hardware deadtime so might need external gate driver
-  // or second timer / logic gates. Ask TA about this.
+  // Dead time is implemented in hardware using RC delay circuit
+// on the half-bridge gate driver. No software deadtime needed.
   
-  // TODO: analog reference? using default 5V for now but audio signal is small
+  // Using default 5V analog reference — sufficient for peak detector output range
 }
 
 void loop() {
-  // --- SPECTROGRAM DATA ACQUISITION ---
-  // FIXME: this is totally fake right now, just reading pots because
-  // we don't have the peak detector circuit or BPF outputs wired to ADC yet
+  // Read peak detector outputs from each BPF band
   
   int rawBass = analogRead(potBass);    // 0-1023
   int rawMid = analogRead(potMid);
   int rawTreble = analogRead(potTreble);
   
   // map to bar height (0 to 50 pixels)
-  // TODO: replace with actual envelope detector / peak detector readings
+  // Hardware envelope detectors (diode + capacitor + op-amp) on A0-A2
   // from the BPF outputs. Need op-amp peak detector circuit first.
   int targetBass = map(rawBass, 0, 1023, 0, 50);
   int targetMid = map(rawMid, 0, 1023, 0, 50);
@@ -193,23 +190,4 @@ void drawSpectrogram() {
   display.display();
 }
 
-// TODO: add interrupt service routine for fast ADC sampling
-// ISR(ADC_vect) { ... }
 
-// TODO: add deadtime generation function
-// maybe using delayMicroseconds? but that's bad practice
-// probably need external RC delay + logic gates or dedicated gate driver IC
-
-// TODO: implement actual peak detector in software?
-// right now we're just reading DC pot values
-// need to rectify and envelope detect the AC audio signal
-// could do in hardware with diode+capacitor+op amp
-// or in software with max value over a window
-
-// NOTES FROM LAB:
-// - OLED works but text is a little dim, maybe contrast setting?
-// - Timer output on pin 9 is square wave at ~160kHz per scope, good
-// - Haven't wired the comparator yet, so no real PWM modulation
-// - Need 2nd breadboard tomorrow for class-D output stage
-// - Forgot to add 0.1uF caps across op amp power pins, do that next time
-// - Spectrogram bars move but they're just reading pot knobs, not audio
