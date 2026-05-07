@@ -134,23 +134,12 @@ void loop() {
   // --- UPDATE OLED ---
   drawSpectrogram();
   
-  // --- CLASS-D MODULATOR ---
-  // TODO: this is where we should update OCR1A based on audio input
-  // to do PWM. Right now it's just fixed 50% duty cycle.
-  // Need to:
-  // 1. Sample audio input (fast! need to check how fast analogRead is)
-  // 2. Scale it to match ICR1 range
-  // 3. Update OCR1A
-  // 4. Add triangle wave comparison? Or is the timer generating the triangle?
-  //    Actually wait - the project says use integrator circuit for triangle wave
-  //    and comparator for PWM. So Arduino might just generate the carrier,
-  //    not the modulated PWM... need to re-read spec.
-  
-  // int audioSample = analogRead(audioInput); // 0-1023, need to bias around 2.5V?
-  // OCR1A = map(audioSample, 0, 1023, 0, ICR1); // this is probably wrong, needs offset
-  
-  // FIXME: analogRead is too slow (100us) to do proper audio sampling in loop
-  // need to use timer interrupt or free-running ADC mode
+   // --- CLASS-D MODULATOR ---
+  // PWM modulation is handled entirely in hardware:
+  //   - Integrator circuit generates 100kHz triangle wave
+  //   - LM393 comparator compares triangle with audio input to produce PWM
+  // Arduino Timer1 generates the carrier frequency only.
+  // No software audio sampling or OCR1A update needed.
   
 }
 
