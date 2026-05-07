@@ -7,6 +7,7 @@
 #define OLED_RESET -1
 // I2C address confirmed as 0x3C for this SSD1306 breakout
 #define SCREEN_ADDRESS 0x3C
+volatile int audioSample = 512; // updated by ADC ISR, biased around 512
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -105,6 +106,14 @@ void setup() {
 // on the half-bridge gate driver. No software deadtime needed.
   
   // Using default 5V analog reference — sufficient for peak detector output range
+  
+  // Free-running ADC on A3 for audio sampling
+ADMUX = (1 << REFS0) | (1 << MUX1) | (1 << MUX0); // AVcc ref, channel A3
+ADCSRA = (1 << ADEN) | (1 << ADATE) | (1 << ADIE) // enable, auto-trigger, interrupt
+       | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // prescaler 128 (~9.6kHz sample rate)
+ADCSRB = 0; // free-running mode
+ADSC = 1; // start first conversion
+sei();
 }
 
 void loop() {
@@ -189,5 +198,7 @@ void drawSpectrogram() {
 
   display.display();
 }
-
+ISR(ADC_vect) {
+  audioSample = ADC; // 0-1023, updated automatically each conversion
+}
 
